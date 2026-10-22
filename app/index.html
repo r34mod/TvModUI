@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Inicio</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="photo-wallpaper" data-phase="day">
+  <!-- Background photo: two layers so the wallpaper can crossfade with the time of day. -->
+  <div id="wallpaper" aria-hidden="true">
+    <div id="wallpaperA" class="wallpaperLayer"></div>
+    <div id="wallpaperB" class="wallpaperLayer"></div>
+
+    <!-- Optional fallback: the old stylised coastal city. It is hidden when a
+         photo wallpaper is active; the default background uses the real photos. -->
+    <div id="coastScene">
+      <svg viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" class="sky-stop" style="stop-color:var(--sky-top)"/>
+            <stop offset=".58" class="sky-stop" style="stop-color:var(--sky-mid)"/>
+            <stop offset="1" class="sky-stop" style="stop-color:var(--sky-bottom)"/>
+          </linearGradient>
+          <linearGradient id="seaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" class="sea-stop" style="stop-color:var(--sea-top)"/>
+            <stop offset="1" class="sea-stop" style="stop-color:var(--sea-bottom)"/>
+          </linearGradient>
+          <radialGradient id="sunGlow">
+            <stop offset="0" style="stop-color:var(--sun);stop-opacity:.55"/>
+            <stop offset=".4" style="stop-color:var(--sun);stop-opacity:.16"/>
+            <stop offset="1" style="stop-color:var(--sun);stop-opacity:0"/>
+          </radialGradient>
+          <linearGradient id="beamGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" style="stop-color:var(--beam);stop-opacity:.3"/>
+            <stop offset="1" style="stop-color:var(--beam);stop-opacity:0"/>
+          </linearGradient>
+          <pattern id="winA" width="28" height="32" patternUnits="userSpaceOnUse">
+            <rect class="win d1" x="5" y="6" width="11" height="13" rx="1.5"/>
+          </pattern>
+          <pattern id="winB" width="28" height="32" patternUnits="userSpaceOnUse">
+            <rect class="win d2" x="5" y="6" width="11" height="13" rx="1.5"/>
+          </pattern>
+          <pattern id="winC" width="28" height="32" patternUnits="userSpaceOnUse">
+            <rect class="win d3" x="5" y="6" width="11" height="13" rx="1.5"/>
+          </pattern>
+        </defs>
+
+        <!-- Sky, stars and celestial light. -->
+        <rect class="sky" width="1920" height="700" fill="url(#skyGrad)"/>
+        <g class="stars">
+          <circle cx="120" cy="120" r="2"/><circle cx="240" cy="210" r="1.5"/>
+          <circle cx="360" cy="90" r="1.8"/><circle cx="500" cy="160" r="1.2"/>
+          <circle cx="610" cy="70" r="2"/><circle cx="760" cy="130" r="1.4"/>
+          <circle cx="870" cy="250" r="1.8"/><circle cx="980" cy="100" r="1.5"/>
+          <circle cx="1090" cy="180" r="1.2"/><circle cx="1220" cy="80" r="2"/>
+          <circle cx="1330" cy="160" r="1.4"/><circle cx="1450" cy="110" r="1.7"/>
+          <circle cx="1580" cy="230" r="1.2"/><circle cx="1700" cy="90" r="2"/>
+          <circle cx="1820" cy="180" r="1.5"/><circle cx="300" cy="330" r="1.2"/>
+          <circle cx="950" cy="300" r="1.3"/><circle cx="1400" cy="300" r="1.1"/>
+        </g>
+        <circle class="sun-glow" cx="680" cy="200" r="220" fill="url(#sunGlow)"/>
+        <circle class="sun" cx="680" cy="200" r="56"/>
+        <circle class="moon" cx="680" cy="200" r="48"/>
+        <g class="clouds">
+          <path d="M150,300 q28,-30 64,-16 q24,-30 62,-8 q34,-12 48,18 q26,10 18,32 h-190 q-18,-16 -2,-26 z"/>
+          <path d="M1030,250 q24,-24 54,-12 q20,-22 52,-5 q28,-8 38,16 q20,10 12,25 h-156 q-16,-14 0,-24 z"/>
+          <path d="M1510,340 q20,-20 46,-9 q18,-18 44,-4 q24,-7 32,14 q17,8 10,22 h-132 q-14,-12 0,-23 z"/>
+        </g>
+        <g class="birds">
+          <path d="M760,345 q10,-8 20,0 q10,-8 20,0"/>
+          <path d="M820,315 q8,-6 16,0 q8,-6 16,0"/>
+        </g>
+
+        <!-- Headland, sea and the far lighthouse. -->
+        <path class="far-land" d="M0,660 L0,590 C80,560 160,560 240,585 C320,610 400,600 500,625 L620,650 L0,660 Z"/>
+        <ellipse class="haze" cx="600" cy="650" rx="520" ry="42"/>
+        <rect class="sea" x="0" y="650" width="1920" height="430" fill="url(#seaGrad)"/>
+        <g class="water-light" fill="none" stroke-width="3" stroke-linecap="round">
+          <path d="M600,690 q40,-5 80,0 q40,5 80,0"/>
+          <path d="M620,722 q30,-4 60,0 q30,4 60,0"/>
+          <path d="M590,762 q50,-5 100,0 q40,4 80,0"/>
+          <path d="M635,815 q25,-3 50,0 q25,3 50,0"/>
+        </g>
+        <g class="waves" fill="none" stroke-width="2">
+          <path d="M0,720 C120,710 220,730 340,720 S560,710 700,725"/>
+          <path d="M0,770 C110,760 230,780 360,768 S560,758 720,775"/>
+          <path d="M0,835 C140,824 260,842 400,832 S590,822 750,840"/>
+          <path d="M0,910 C160,900 280,918 430,908 S620,898 780,916"/>
+        </g>
+
+        <!-- Shoreline and the city. -->
+        <path class="shore" d="M780,720 C980,690 1250,680 1500,678 C1700,676 1840,680 1920,690 L1920,1080 L780,1080 Z"/>
+        <path class="promenade" d="M780,718 C980,688 1250,678 1500,676 C1700,674 1840,678 1920,688"/>
+        <g class="city">
+          <rect class="building" x="930" y="580" width="80" height="140" rx="4"/>
+          <rect class="win-layer" x="938" y="590" width="64" height="122" fill="url(#winA)"/>
+          <rect class="roof" x="948" y="572" width="44" height="9" rx="2"/>
+
+          <rect class="building" x="1015" y="520" width="95" height="200" rx="4"/>
+          <rect class="win-layer" x="1023" y="530" width="79" height="182" fill="url(#winB)"/>
+          <path class="antenna" d="M1062,520 V474"/>
+
+          <rect class="building" x="1115" y="600" width="70" height="120" rx="4"/>
+          <rect class="win-layer" x="1123" y="610" width="54" height="102" fill="url(#winC)"/>
+
+          <rect class="building" x="1190" y="470" width="120" height="250" rx="4"/>
+          <rect class="win-layer" x="1198" y="480" width="104" height="232" fill="url(#winA)"/>
+          <path class="antenna" d="M1250,470 V414"/>
+          <circle class="beacon" cx="1250" cy="412" r="3"/>
+
+          <rect class="building" x="1315" y="560" width="90" height="160" rx="4"/>
+          <rect class="win-layer" x="1323" y="570" width="74" height="142" fill="url(#winB)"/>
+
+          <rect class="building" x="1410" y="620" width="75" height="100" rx="4"/>
+          <rect class="win-layer" x="1418" y="630" width="59" height="82" fill="url(#winC)"/>
+
+          <rect class="building" x="1490" y="500" width="110" height="220" rx="4"/>
+          <rect class="win-layer" x="1498" y="510" width="94" height="202" fill="url(#winB)"/>
+          <rect class="roof" x="1508" y="492" width="74" height="9" rx="2"/>
+
+          <rect class="building" x="1605" y="580" width="90" height="140" rx="4"/>
+          <rect class="win-layer" x="1613" y="590" width="74" height="122" fill="url(#winA)"/>
+
+          <rect class="building" x="1700" y="540" width="100" height="180" rx="4"/>
+          <rect class="win-layer" x="1708" y="550" width="84" height="162" fill="url(#winC)"/>
+          <path class="antenna" d="M1750,540 V498"/>
+          <circle class="beacon" cx="1750" cy="496" r="3"/>
+
+          <rect class="building" x="1805" y="610" width="115" height="110" rx="4"/>
+          <rect class="win-layer" x="1813" y="620" width="99" height="92" fill="url(#winB)"/>
+        </g>
+
+        <!-- Little details: the lighthouse sits at the far left, clear of the hero title. -->
+        <g class="lighthouse">
+          <path class="beam" d="M70,502 L454,450 L454,554 Z"/>
+          <path class="lighthouse-body" d="M50,620 L60,510 L88,510 L98,620 Z"/>
+          <rect class="lighthouse-stripe" x="55" y="535" width="38" height="14"/>
+          <rect class="lighthouse-stripe" x="53" y="575" width="42" height="14"/>
+          <rect class="lighthouse-cap" x="52" y="502" width="44" height="10" rx="3"/>
+          <circle class="lighthouse-lamp" cx="74" cy="497" r="6"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Ambient glow in the colour of the focused dock app; two layers so colours crossfade. -->
+  <div id="ambientA" class="ambient"></div>
+  <div id="ambientB" class="ambient"></div>
+
+  <!-- Top shelf: the focused dock app's name, above the dock. -->
+  <div id="hero"></div>
+
+  <!-- Easter egg: five Back presses in a row send a Cercanías Madrid train
+       across the first row of apps. -->
+  <div id="train" aria-hidden="true">
+    <svg viewBox="0 0 1500 150" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="trainBody" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#ffffff"/>
+          <stop offset=".55" stop-color="#f4f3ef"/>
+          <stop offset="1" stop-color="#d9dbdc"/>
+        </linearGradient>
+        <linearGradient id="trainBeam" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#fff1a8" stop-opacity=".5"/>
+          <stop offset="1" stop-color="#fff1a8" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+
+      <ellipse cx="750" cy="140" rx="700" ry="8" fill="#000" opacity=".22"/>
+      <path d="M1462,62 L1500,44 L1500,92 Z" fill="url(#trainBeam)"/>
+
+      <!-- Car 1 (rear) -->
+      <g>
+        <rect x="0" y="24" width="460" height="92" rx="18" fill="url(#trainBody)" stroke="#b9bdc0" stroke-width="1.5"/>
+        <rect x="14" y="16" width="432" height="14" rx="7" fill="#c9ced2"/>
+        <rect x="180" y="11" width="60" height="8" rx="4" fill="#b9bec2"/>
+        <rect x="8" y="92" width="444" height="20" rx="10" fill="#d51f2b"/>
+        <rect x="0" y="108" width="460" height="8" rx="4" fill="#2e3338"/>
+        <circle cx="12" cy="82" r="4" fill="#d51f2b"/>
+        <g fill="#1d3148" stroke="#87919a" stroke-width="1.5">
+          <rect x="128" y="38" width="44" height="30" rx="5"/>
+          <rect x="182" y="38" width="44" height="30" rx="5"/>
+          <rect x="236" y="38" width="44" height="30" rx="5"/>
+          <rect x="290" y="38" width="44" height="30" rx="5"/>
+        </g>
+        <g>
+          <rect x="62" y="28" width="48" height="84" rx="4" fill="#c81e2b"/>
+          <rect x="70" y="36" width="32" height="22" rx="3" fill="#233a52"/>
+          <rect x="62" y="67" width="48" height="2" fill="#8f121b"/>
+          <rect x="350" y="28" width="48" height="84" rx="4" fill="#c81e2b"/>
+          <rect x="358" y="36" width="32" height="22" rx="3" fill="#233a52"/>
+          <rect x="350" y="67" width="48" height="2" fill="#8f121b"/>
+        </g>
+        <g fill="#1b1f23">
+          <circle cx="72" cy="123" r="13"/><circle cx="132" cy="123" r="13"/>
+          <circle cx="328" cy="123" r="13"/><circle cx="388" cy="123" r="13"/>
+        </g>
+        <g fill="#8f979d">
+          <circle cx="72" cy="123" r="5"/><circle cx="132" cy="123" r="5"/>
+          <circle cx="328" cy="123" r="5"/><circle cx="388" cy="123" r="5"/>
+        </g>
+        <g stroke="#8f979d" stroke-width="1.5">
+          <path d="M72,115 v16 M64,123 h16 M132,115 v16 M124,123 h16"/>
+          <path d="M328,115 v16 M320,123 h16 M388,115 v16 M380,123 h16"/>
+        </g>
+        <rect x="54" y="112" width="96" height="9" rx="4" fill="#2c3237"/>
+        <rect x="310" y="112" width="96" height="9" rx="4" fill="#2c3237"/>
+      </g>
+
+      <!-- Car 2 (middle, with pantograph) -->
+      <g transform="translate(480,0)">
+        <rect x="0" y="24" width="460" height="92" rx="18" fill="url(#trainBody)" stroke="#b9bdc0" stroke-width="1.5"/>
+        <rect x="14" y="16" width="432" height="14" rx="7" fill="#c9ced2"/>
+        <rect x="150" y="11" width="54" height="8" rx="4" fill="#b9bec2"/>
+        <g stroke="#5d646b" stroke-width="2.5" fill="none" stroke-linecap="round">
+          <path d="M210,16 L228,1 L246,16"/>
+          <path d="M218,6 L238,6"/>
+        </g>
+        <rect x="8" y="92" width="444" height="20" rx="10" fill="#d51f2b"/>
+        <rect x="0" y="108" width="460" height="8" rx="4" fill="#2e3338"/>
+        <g fill="#1d3148" stroke="#87919a" stroke-width="1.5">
+          <rect x="128" y="38" width="44" height="30" rx="5"/>
+          <rect x="182" y="38" width="44" height="30" rx="5"/>
+          <rect x="236" y="38" width="44" height="30" rx="5"/>
+          <rect x="290" y="38" width="44" height="30" rx="5"/>
+        </g>
+        <g>
+          <rect x="62" y="28" width="48" height="84" rx="4" fill="#c81e2b"/>
+          <rect x="70" y="36" width="32" height="22" rx="3" fill="#233a52"/>
+          <rect x="62" y="67" width="48" height="2" fill="#8f121b"/>
+          <rect x="350" y="28" width="48" height="84" rx="4" fill="#c81e2b"/>
+          <rect x="358" y="36" width="32" height="22" rx="3" fill="#233a52"/>
+          <rect x="350" y="67" width="48" height="2" fill="#8f121b"/>
+        </g>
+        <circle cx="165" cy="82" r="9" fill="#d51f2b"/>
+        <text x="165" y="87" text-anchor="middle" font-family="Outfit, sans-serif" font-size="12" font-weight="700" fill="#fff">C</text>
+        <text x="238" y="87" text-anchor="middle" font-family="Outfit, sans-serif" font-size="16" font-weight="600" letter-spacing=".6" fill="#c81e2b">Cercanías <tspan fill="#28323c">Madrid</tspan></text>
+        <g fill="#1b1f23">
+          <circle cx="72" cy="123" r="13"/><circle cx="132" cy="123" r="13"/>
+          <circle cx="328" cy="123" r="13"/><circle cx="388" cy="123" r="13"/>
+        </g>
+        <g fill="#8f979d">
+          <circle cx="72" cy="123" r="5"/><circle cx="132" cy="123" r="5"/>
+          <circle cx="328" cy="123" r="5"/><circle cx="388" cy="123" r="5"/>
+        </g>
+        <g stroke="#8f979d" stroke-width="1.5">
+          <path d="M72,115 v16 M64,123 h16 M132,115 v16 M124,123 h16"/>
+          <path d="M328,115 v16 M320,123 h16 M388,115 v16 M380,123 h16"/>
+        </g>
+        <rect x="54" y="112" width="96" height="9" rx="4" fill="#2c3237"/>
+        <rect x="310" y="112" width="96" height="9" rx="4" fill="#2c3237"/>
+      </g>
+
+      <!-- Car 3 (front) -->
+      <g transform="translate(960,0)">
+        <rect x="0" y="24" width="460" height="92" rx="18" fill="url(#trainBody)" stroke="#b9bdc0" stroke-width="1.5"/>
+        <rect x="14" y="16" width="432" height="14" rx="7" fill="#c9ced2"/>
+        <rect x="180" y="11" width="60" height="8" rx="4" fill="#b9bec2"/>
+        <rect x="8" y="92" width="444" height="20" rx="10" fill="#d51f2b"/>
+        <rect x="0" y="108" width="460" height="8" rx="4" fill="#2e3338"/>
+        <g fill="#1d3148" stroke="#87919a" stroke-width="1.5">
+          <rect x="128" y="38" width="44" height="30" rx="5"/>
+          <rect x="182" y="38" width="44" height="30" rx="5"/>
+          <rect x="236" y="38" width="44" height="30" rx="5"/>
+          <rect x="290" y="38" width="44" height="30" rx="5"/>
+        </g>
+        <g>
+          <rect x="62" y="28" width="48" height="84" rx="4" fill="#c81e2b"/>
+          <rect x="70" y="36" width="32" height="22" rx="3" fill="#233a52"/>
+          <rect x="62" y="67" width="48" height="2" fill="#8f121b"/>
+        </g>
+        <path d="M460,24 L498,34 Q512,70 498,106 L460,116 Z" fill="url(#trainBody)" stroke="#b9bdc0" stroke-width="1.5"/>
+        <path d="M468,36 L498,42 Q506,70 498,98 L468,104 Z" fill="#1d3148"/>
+        <rect x="460" y="92" width="44" height="20" rx="6" fill="#d51f2b"/>
+        <circle cx="498" cy="82" r="5" fill="#fff1a8"/>
+        <g fill="#1b1f23">
+          <circle cx="72" cy="123" r="13"/><circle cx="132" cy="123" r="13"/>
+          <circle cx="328" cy="123" r="13"/><circle cx="388" cy="123" r="13"/>
+        </g>
+        <g fill="#8f979d">
+          <circle cx="72" cy="123" r="5"/><circle cx="132" cy="123" r="5"/>
+          <circle cx="328" cy="123" r="5"/><circle cx="388" cy="123" r="5"/>
+        </g>
+        <g stroke="#8f979d" stroke-width="1.5">
+          <path d="M72,115 v16 M64,123 h16 M132,115 v16 M124,123 h16"/>
+          <path d="M328,115 v16 M320,123 h16 M388,115 v16 M380,123 h16"/>
+        </g>
+        <rect x="54" y="112" width="96" height="9" rx="4" fill="#2c3237"/>
+        <rect x="310" y="112" width="96" height="9" rx="4" fill="#2c3237"/>
+      </g>
+
+      <rect x="452" y="76" width="36" height="34" rx="5" fill="#2b3036"/>
+      <rect x="932" y="76" width="36" height="34" rx="5" fill="#2b3036"/>
+    </svg>
+  </div>
+
+  <header>
+    <div id="leftBlock">
+      <div id="greeting"></div>
+      <div id="timeRow">
+        <span id="clock"></span><span id="ampm"></span><span class="divider"></span><span id="date"></span>
+      </div>
+      <div id="weatherRow" class="hidden">
+        <span id="weatherIcon"></span>
+        <span id="weatherTemp"></span>
+        <span id="weatherDesc"></span>
+        <span id="weatherCity"></span>
+      </div>
+      <div id="forecastRow" class="hidden"></div>
+    </div>
+    <div id="topButtons">
+      <div class="pill" id="btnHome">
+        <svg viewBox="0 0 24 24"><path d="M10,20v-6h4v6h5v-8h3L12,3L2,12h3v8H10z"/></svg>
+        <span>Casa</span>
+      </div>
+      <div class="pill" id="btnInputs">
+        <svg viewBox="0 0 24 24"><path d="M18,7V4c0,-1.1 -0.9,-2 -2,-2H8C6.9,2 6,2.9 6,4v3H5v6l3,6v3h8v-3l3,-6V7H18zM8,4h8v3h-2V5h-1v2h-2V5h-1v2H8V4z"/></svg>
+        <span>Entradas</span>
+      </div>
+      <div class="pill" id="btnWifi">
+        <svg viewBox="0 0 24 24"><path d="M1,9l2,2c4.97,-4.97 13.030,-4.97 18,0l2,-2C16.93,2.93 7.08,2.93 1,9zM9,17l3,3 3,-3c-1.65,-1.66 -4.34,-1.66 -6,0zM5,13l2,2c2.76,-2.76 7.24,-2.76 10,0l2,-2C15.14,9.14 8.87,9.14 5,13z"/></svg>
+        <span id="wifiLabel">Wi-Fi</span>
+      </div>
+      <div class="pill" id="btnSettings">
+        <svg viewBox="0 0 24 24"><path d="M19.14,12.94c0.04,-0.3 0.06,-0.61 0.06,-0.94c0,-0.32 -0.02,-0.64 -0.07,-0.94l2.030,-1.58c0.18,-0.14 0.23,-0.41 0.12,-0.61l-1.92,-3.32c-0.12,-0.22 -0.37,-0.29 -0.59,-0.22l-2.39,0.96c-0.5,-0.38 -1.03,-0.7 -1.62,-0.94L14.4,2.81c-0.04,-0.24 -0.24,-0.41 -0.48,-0.41h-3.84c-0.24,0 -0.43,0.17 -0.47,0.41L9.25,5.35C8.66,5.59 8.12,5.92 7.63,6.29L5.24,5.33c-0.22,-0.08 -0.47,0 -0.59,0.22L2.74,8.87C2.62,9.08 2.66,9.34 2.86,9.48l2.030,1.58C4.84,11.36 4.8,11.69 4.8,12s0.02,0.64 0.07,0.94l-2.030,1.58c-0.18,0.14 -0.23,0.41 -0.12,0.61l1.92,3.32c0.12,0.22 0.37,0.29 0.59,0.22l2.39,-0.96c0.5,0.38 1.03,0.7 1.62,0.94l0.36,2.54c0.05,0.24 0.24,0.41 0.48,0.41h3.84c0.24,0 0.44,-0.17 0.47,-0.41l0.36,-2.54c0.59,-0.24 1.13,-0.56 1.62,-0.94l2.39,0.96c0.22,0.08 0.47,0 0.59,-0.22l1.92,-3.32c0.12,-0.22 0.07,-0.47 -0.12,-0.61L19.14,12.94zM12,15.6c-1.98,0 -3.6,-1.62 -3.6,-3.6s1.62,-3.6 3.6,-3.6s3.6,1.62 3.6,3.6S13.98,15.6 12,15.6z"/></svg>
+        <span>Ajustes</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Antena TV: quick channel picker, opened from the TV tile. -->
+  <div id="antennaPanel" class="hidden" role="dialog" aria-label="Antena TV">
+    <div id="antennaHeader">
+      <div id="antennaHeading">
+        <span id="antennaTitle">Antena TV</span>
+        <span id="antennaSub">Canales principales</span>
+      </div>
+      <div id="antennaStatus">Canales 1–8</div>
+    </div>
+    <div id="antennaGrid"></div>
+    <div id="antennaHint">Flechas o 1–8 para elegir · OK para ver · Atrás para volver</div>
+  </div>
+
+  <!-- Everything below the header scrolls together: dock band, tiles and the glass highlight. -->
+  <div id="viewport">
+    <div id="stage">
+      <div id="dockBand"></div>
+      <div id="tiles"></div>
+      <div id="glass"></div>
+    </div>
+  </div>
+
+  <!-- Dropdown under the Inputs pill. -->
+  <div id="inputsPanel" class="hidden"></div>
+
+  <!-- Home Assistant: favorite lights, switches, sensors and scenes. -->
+  <div id="haPanel" class="hidden">
+    <div id="haHeader">
+      <div>
+        <span id="haTitle">Casa</span>
+        <span id="haSub">Home Assistant</span>
+      </div>
+      <div id="haStatus"></div>
+    </div>
+    <div id="haGrid"></div>
+    <div id="haHint">Atrás para volver</div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script src="config.js"></script>
+  <script src="apps.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

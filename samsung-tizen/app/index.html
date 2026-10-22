@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TvModUI — Samsung Tizen</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="wallpaper" aria-hidden="true"></div>
+
+  <header id="top">
+    <div>
+      <p id="greeting">Buenas tardes</p>
+      <h1 id="clock">--:--</h1>
+      <p id="date"></p>
+    </div>
+    <div id="badge">Tizen · scaffold</div>
+  </header>
+
+  <main>
+    <div id="sectionTitle">Inicio</div>
+    <div id="grid" role="listbox" aria-label="Apps"></div>
+  </main>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

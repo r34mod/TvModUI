@@ -1,0 +1,38 @@
+# Configuración local y secretos
+app/config.js
+app/config.local.js
+samsung-tizen/app/config.js
+*.key
+*.pem
+*.p12
+.env
+.env.*
+
+# Generado desde la TV
+app/apps.js
+app/icons/*
+!app/icons/README.md
+app/channels/*.png
+
+# Build y dependencias
+dist/
+build/
+*.ipk
+*.wgt
+*.appx
+.venv/
+venv/
+__pycache__/
+*.pyc
+node_modules/
+
+# Logs y temporales
+*.log
+*.tmp
+autoroot.log
+autoroot-payload.log
+
+# Sistema
+.DS_Store
+Thumbs.db
+desktop.ini
