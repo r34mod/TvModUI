@@ -2,35 +2,66 @@
 app/config.js
 app/config.local.js
 samsung-tizen/app/config.js
+samsung-tizen/app/config.local.js
 *.key
 *.pem
 *.p12
+*.pfx
+*.jks
+*.keystore
 .env
 .env.*
+!.env.example
+
+# Credenciales SSH / red
+.ssh/
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+.netrc
+.git-credentials
 
 # Generado desde la TV
 app/apps.js
 app/icons/*
 !app/icons/README.md
 app/channels/*.png
+!app/channels/README.md
 
 # Build y dependencias
 dist/
 build/
+out/
 *.ipk
 *.wgt
 *.appx
 .venv/
 venv/
+env/
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
+.pytest_cache/
 node_modules/
+coverage/
+*.tsbuildinfo
 
 # Logs y temporales
 *.log
 *.tmp
+*.pid
+*.bak
+*.orig
 autoroot.log
 autoroot-payload.log
+
+# Editores
+.vscode/
+.idea/
+.history/
+*.swp
+*~
 
 # Sistema
 .DS_Store
