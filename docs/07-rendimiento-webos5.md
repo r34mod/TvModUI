@@ -1,187 +1,141 @@
 # 07 — Rendimiento en webOS 5
 
-## 1. Síntoma
+## 1. Por qué importa
 
-El panel de Antena TV se abría, pero al pulsar flechas o cambiar de canal se
-notaba un tirón fuerte. En las primeras versiones había picos de **cientos de
-milisegundos** por pulsación.
+webOS 5 usa un motor Chromium antiguo y memoria limitada. Un launcher que se ve
+bien en un navegador de escritorio puede dar tirones en la TV si usa efectos CSS
+modernos o demasiadas actualizaciones del DOM.
 
-La TV es una **LG 55UN71006LB** con webOS 5 y un webview basado en
-**Chromium 68**. No es un navegador moderno: los filtros y las capas grandes se
-pagan caros.
+La UI se ajustó primero para la TV, no para el escritorio.
 
----
+## 2. Reglas usadas
 
-## 2. Causas
+### Sin blur en vivo
 
-Se identificaron cuatro:
+No uses:
 
-1. **Blur a pantalla completa** sobre el fondo:
-   `filter: blur(18px)` en `#wallpaper`.
-2. **Panel semitransparente** encima del fondo: obliga a mezclar y repintar la
-   pared de atrás cada vez que cambia una tarjeta.
-3. **Sombras grandes y transformaciones** en la tarjeta enfocada:
-   `box-shadow` de 30–46 px y `scale()`.
-4. **Filtros en los logos**: `drop-shadow()` en cada imagen.
+- `backdrop-filter`;
+- `filter: blur()` en capas a pantalla completa;
+- paneles translúcidos con fondo desenfocado;
+- sombras animadas que fuercen repintado.
 
-Además, el panel se reconstruía en cada apertura con 8 tarjetas e imágenes.
+Usa:
 
----
+- paneles opacos;
+- degradados precalculados;
+- bordes estáticos;
+- un anillo de foco plano con `box-shadow: inset`;
+- `transform` y `opacity` para animar.
 
-## 3. Qué se cambió
+### Evitar layout caro o no soportado
 
-### Fondo
+En webOS 5, prefiere:
 
-Se eliminó por completo:
+- anchos/altos explícitos;
+- `position: absolute` en zonas fijas;
+- `margin` en vez de `gap` de flex si hay dudas;
+- `top/right/bottom/left` en vez de `inset`;
+- layouts grid/flex simples.
 
-```css
-/* eliminado */
-body.antenna-open #wallpaper {
-  filter: blur(18px) saturate(1.08) brightness(0.92);
-  transform: scale(1.05);
-}
-```
+### Paneles prerenderizados
 
-El fondo queda **nítido**. El panel se separa con su propio fondo opaco y su
-borde, no con blur.
+El panel de Antena TV se construye una vez y se reutiliza. Las tarjetas de canal
+no se recrean en cada movimiento de foco. El foco solo cambia clases.
 
-### Panel
+### Limitar trabajo del DOM
 
-De semitransparente a **opaco**:
+- El reloj se actualiza una vez por minuto, no cada frame.
+- El fondo cambia solo al cambiar de franja.
+- El tren corre solo al activarse.
+- Los estados de HA se refrescan a demanda, no con un poll permanente.
+- El catálogo de apps es estático hasta que `sync-apps.ps1` lo regenera.
 
-```css
-#antennaPanel {
-  background:
-    radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.06),
-      rgba(255, 255, 255, 0) 48%),
-    linear-gradient(180deg, #191c22, #0b0d11);
-  transition: opacity 100ms linear;
-}
+### Caché
 
-#antennaPanel.hidden {
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 100ms linear, visibility 0s linear 100ms;
-}
-```
+- La lista de canales se cachea en `localStorage`.
+- Las imágenes de fondo son locales y se precargan.
+- Los iconos de apps son archivos locales generados por `sync-apps.ps1`.
 
-Se quitó `backdrop-filter` y se eliminó la animación de escala/desplazamiento
-del panel. Ahora solo hay un fade corto.
+### Reanudación
 
-### Tarjetas
+`handlesRelaunch: false` hace que Home traiga la app existente al frente en vez
+de crear una instancia nueva. Así se evita una recarga completa cada vez que se
+pulsa Home.
 
-Se quitó:
+## 3. Guías de CSS
 
-- `transform: translateY(-5px) scale(1.04)`;
-- `box-shadow` con blur;
-- `transition` de fondo, borde, transform y sombra;
-- `filter: drop-shadow()` de los logos;
-- `transform: scale()` del logo;
-- pseudo-elemento radial con blur.
-
-El foco ahora es un anillo interior:
+Bien:
 
 ```css
-.antChannel.focused {
-  border-color: rgba(255, 255, 255, 0.92);
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.92),
-    inset 0 -3px 0 var(--glow, rgba(255, 255, 255, 0.28));
+.card {
+  background: #171b21;
+  border: 1px solid rgba(255,255,255,.12);
+}
+
+.card.focused {
+  box-shadow: inset 0 0 0 2px #fff;
+  transform: scale(1.04);
 }
 ```
 
-Es un `box-shadow` **sin blur**, dibujado dentro de la tarjeta. No hay
-recomposición de una sombra difuminada.
+Evita:
 
-### Panel precreado
-
-Al arrancar se crea el panel oculto:
-
-```js
-antennaChannels = baseAntennaChannels();
-renderAntenna();
+```css
+/* No usar en webOS 5 */
+.panel {
+  backdrop-filter: blur(24px);
+  filter: blur(8px);
+}
 ```
 
-Al abrirlo:
+Evita animar:
 
-```js
-if (!antennaGrid.children.length) renderAntenna();
-else focusAntenna(0);
+- `box-shadow` con mucho blur;
+- `width`, `height`, `top`, `left`;
+- `background-position` en imágenes grandes;
+- `filter` en un elemento a pantalla completa.
+
+## 4. Animación
+
+- Usa `transform: translate/scale` y `opacity`.
+- Transiciones cortas (120–220 ms para foco, unos 1600 ms para el crossfade).
+- Usa `requestAnimationFrame` para el movimiento que sigue al mando.
+- No lances una animación nueva en cada repetición de tecla sin limitarla.
+
+## 5. Memoria
+
+- Mantén los fondos en 1920×1080 o similar; no incluyas fotos 4K.
+- No incluyas fuentes ni sets de iconos sin usar.
+- No guardes imágenes base64 grandes en JS.
+- Mantén corta la lista de entidades de HA.
+- Elimina nodos de prueba/debug antes de empaquetar.
+
+## 6. Verificación
+
+En la TV:
+
+1. Pulsa Home varias veces y comprueba que Inicio aparece sin flash.
+2. Recorre toda la rejilla con las flechas.
+3. Abre/cierra Antena TV, Casa, Entradas, Red y Ajustes.
+4. Activa el tren y espera a que termine.
+5. Cambia la hora de la TV o edita el horario para probar el fondo.
+6. Reinicia y repite.
+
+Comprobación útil:
+
+```bash
+ssh root@TV_HOST \
+  "luna-send -n 1 -f luna://com.webos.applicationManager/getForegroundAppInfo '{}'"
 ```
 
-El panel oculto usa `visibility: hidden`; así no se pinta hasta que se abre.
+Si la UI da tirones, quita efectos antes de añadir otros. En webOS 5, un panel
+opaco simple suele ser más rápido y verse mejor que uno desenfocado.
 
----
+## 7. Qué no hacer
 
-## 4. Quirks de webOS 5 / Chromium 68
-
-| Problema | Detalle | Solución |
-|---|---|---|
-| `backdrop-filter` | No soportado/no fiable | No usarlo; fondo opaco |
-| `filter: blur()` | Muy caro a pantalla completa | Evitarlo |
-| `flex gap` | El valor se calcula pero no se aplica | Usar `margin` |
-| `inset` | No fiable en CSS | Usar `top/right/bottom/left` |
-| Sombras grandes | Repintan al cambiar el foco | Anillo interior sin blur |
-| Capas semitransparentes | Mezclan con el fondo en cada frame | Panel opaco |
-| Animaciones CSS complejas | Pueden rasterizar de más | Temporizador JS para el tren |
-| `will-change` excesivo | Consume memoria | Usarlo solo en el tren |
-
----
-
-## 5. Medición orientativa
-
-Se midió con el depurador remoto de la TV, provocando cambios de foco y
-esperando dos `requestAnimationFrame`.
-
-Antes:
-
-- picos de **~700 ms** al cambiar de tarjeta;
-- panel con blur + transparencia + sombras;
-- respuesta irregular.
-
-Después:
-
-- la mayoría de cambios de foco quedaron en **~10–20 ms**;
-- mediana ~12 ms en la última batería;
-- algún pico aislado del sistema, pero sin el tirón continuo anterior;
-- apertura del panel en torno a **140 ms** con el fade.
-
-Son medidas orientativas: la TV puede variar por temperatura, red, apps en
-segundo plano o el propio servidor de depuración.
-
----
-
-## 6. Reglas para futuros cambios
-
-1. No poner `filter: blur()` sobre `#wallpaper`.
-2. No usar `backdrop-filter` como base del diseño.
-3. No usar capas grandes semitransparentes para paneles.
-4. Evitar `box-shadow` con blur grande en elementos que cambian de foco.
-5. Evitar `scale()`/`translate()` en cada tarjeta al navegar.
-6. Precrear paneles ocultos y reutilizarlos.
-7. Medir en la TV, no solo en el PC.
-8. Si se quiere “cristal”, usar una **imagen ya desenfocada** como fondo opaco,
-   no blur en vivo.
-
----
-
-## 7. Si vuelve a ir lento
-
-Revisar en este orden:
-
-1. ¿Hay algún `filter` o `backdrop-filter` nuevo?
-2. ¿El panel volvió a ser semitransparente?
-3. ¿Se añadieron sombras/transformaciones a `.antChannel`?
-4. ¿Se está re-renderizando el panel en cada apertura?
-5. ¿Hay animaciones CSS de fondo o de opacidad a pantalla completa?
-6. ¿La lista de canales se consulta cada vez que se abre el panel?
-7. ¿El home tiene muchas apps o iconos grandes sin caché?
-
-Herramientas:
-
-- abrir el inspector remoto del webview;
-- comprobar `getComputedStyle(...).filter` y `.backdropFilter`;
-- medir con `requestAnimationFrame`;
-- revisar `localStorage` (`tvhome.antenna.v1`);
-- mirar logs de la TV por SSH.
+- No añadas React/Vue ni un runtime grande para esta UI.
+- No uses una fuente web remota.
+- No cargues imágenes de red al arrancar.
+- No tengas un intervalo permanente que repinte la rejilla.
+- No uses `backdrop-filter` “solo por el efecto cristal”.
+- No asumas que Chrome de escritorio se comporta igual que el WebView de la TV.

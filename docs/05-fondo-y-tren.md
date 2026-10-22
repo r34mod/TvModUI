@@ -1,9 +1,8 @@
-# 05 — Fondo fotográfico y tren de Cercanías
+# 05 — Fondo y tren
 
 ## 1. Fondo de Manarola
 
-El fondo por defecto son **fotos reales** de Manarola (Cinque Terre), no la
-escena SVG original. Se recortaron a **1920×1080** y se guardan en:
+Inicio usa cuatro fotos de Manarola como identidad visual:
 
 ```text
 app/wallpapers/
@@ -14,195 +13,107 @@ app/wallpapers/
   CREDITS.md
 ```
 
-Horario (`CONFIG.wallpaperSchedule`):
+Son recursos locales, no URLs remotas. Se precargan para que el cambio no
+dependa de la red. Los créditos están en `app/wallpapers/CREDITS.md`.
 
-| Desde | Hasta | Foto |
-|---:|---:|---|
+## 2. Franjas horarias
+
+Con `wallpaper: 'auto'`, la imagen cambia según la hora local de la TV:
+
+| Desde | Hasta | Imagen |
+|---|---|---|
 | 05:00 | 08:00 | `mediterranean-dawn.jpg` |
 | 08:00 | 17:00 | `mediterranean-day.jpg` |
 | 17:00 | 20:00 | `mediterranean-sunset.jpg` |
 | 20:00 | 05:00 | `mediterranean-night.jpg` |
 
-`from` está incluido y `to` excluido. Si `to` es menor que `from`, la franja
-cruza medianoche (por ejemplo, 20 → 5).
-
-Configuración:
-
 ```js
-wallpaper: 'auto',
 wallpaperSchedule: [
   { from: 5,  to: 8,  image: 'wallpapers/mediterranean-dawn.jpg' },
   { from: 8,  to: 17, image: 'wallpapers/mediterranean-day.jpg' },
   { from: 17, to: 20, image: 'wallpapers/mediterranean-sunset.jpg' },
   { from: 20, to: 5,  image: 'wallpapers/mediterranean-night.jpg' }
-],
-wallpaperCrossfadeMs: 1600
+]
 ```
 
-También se puede usar:
+La duración del crossfade es `wallpaperCrossfadeMs` (1600 ms por defecto). Solo
+cambia la opacidad de dos capas; no hay blur en vivo.
+
+También puedes usar:
 
 - una ruta fija de imagen;
 - `'coast'` para la escena SVG de reserva;
-- `null` para fondo negro.
+- `null` para negro.
 
----
+## 3. SVGs de respaldo
 
-## 2. Capas y fundido
-
-Hay dos capas (`#wallpaperA` y `#wallpaperB`). Al cambiar de foto:
-
-1. se carga la nueva imagen en la capa inactiva;
-2. se pone su opacidad a 1;
-3. la capa anterior baja a 0;
-4. el fundido dura `wallpaperCrossfadeMs` (1600 ms).
-
-CSS:
-
-```css
-#wallpaper {
-  position: fixed;
-  top: 0; right: 0; bottom: 0; left: 0;
-  z-index: -1;
-  overflow: hidden;
-  background: #000;
-  pointer-events: none;
-}
-
-.wallpaperLayer {
-  position: absolute;
-  top: 0; right: 0; bottom: 0; left: 0;
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
-  opacity: 0;
-  transition: opacity 1600ms ease;
-}
-```
-
-No se aplica `filter: blur()` al fondo. En webOS 5, un blur a pantalla completa
-obliga a rasterizar la imagen cada vez que se abre un panel y provoca tirones.
-
----
-
-## 3. Sombra y legibilidad
-
-Sobre la foto se pinta una capa oscura para que el texto blanco se lea:
-
-```css
-body.photo-wallpaper::before {
-  background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, .55) 0%,
-    rgba(0, 0, 0, .22) 46%,
-    rgba(0, 0, 0, .76) 100%
-  );
-}
-
-#hero,
-#leftBlock {
-  text-shadow: 0 2px 18px rgba(0, 0, 0, .55);
-}
-```
-
-El reloj y el título de la app enfocada también llevan sombra suave.
-
----
-
-## 4. Actualización
-
-`applyWallpaper()` se ejecuta:
-
-- al arrancar;
-- cada **60 s**;
-- al volver del segundo plano.
-
-Así el fondo cambia solo al cruzar una franja horaria, sin animaciones continuas.
-
----
-
-## 5. Easter egg: tren de Cercanías Madrid
-
-### Disparo
-
-Cinco pulsaciones de **Atrás** en menos de **3000 ms**:
+Si falta una foto o no se puede decodificar, Inicio usa una escena SVG de costa
+generada en el propio HTML/CSS. Tiene cuatro fases:
 
 ```js
-var BACK_SEQUENCE_MS = 3000;
-var backPresses = 0, backStarted = 0;
-
-function noteBackPress() {
-  var now = Date.now();
-  if (!backPresses || now - backStarted > BACK_SEQUENCE_MS) {
-    backPresses = 0;
-    backStarted = now;
-  }
-  backPresses++;
-  if (backPresses < 5) return false;
-  resetBackSequence();
-  playTrain();
-  return true;
-}
+coastSchedule: [
+  { from: 5,  to: 8,  phase: 'dawn' },
+  { from: 8,  to: 17, phase: 'day' },
+  { from: 17, to: 20, phase: 'sunset' },
+  { from: 20, to: 5,  phase: 'night' }
+]
 ```
 
-Si el usuario está en un panel (`inputs`, `ha`, `antenna`) o moviendo una
-tarjeta, ese Atrás cierra el panel y **no cuenta** para la secuencia.
+Esta escena no depende de imágenes externas.
 
-### Animación
+## 4. Tren de Cercanías
 
-El tren es un SVG de **3 coches** con branding “Cercanías Madrid”. Cruza la
-primera fila visible de apps de izquierda a derecha durante unos **5,2 s**.
+El tren es un easter egg. Se activa pulsando **Atrás cinco veces consecutivas**
+en Inicio. No cambia apps, ajustes ni el Home; es solo una escena visual.
 
-Se usa un `setInterval` de 16 ms en lugar de una animación CSS porque es más
-fiable en webOS 5:
+Uso recomendado:
+
+- empezar desde la rejilla principal;
+- pulsar Atrás cinco veces seguidas;
+- no abrir un panel entre pulsaciones;
+- la escena termina sola o con Atrás.
+
+La animación es CSS/JS local. No descarga recursos ni llama a servicios
+externos.
+
+## 5. Activación
+
+Valores relevantes de `CONFIG`:
 
 ```js
-trainEl.classList.add('running');
-trainEl.style.opacity = '1';
-trainEl.style.transform = 'translateX(-1500px)';
-
-var started = Date.now();
-trainTimer = setInterval(function () {
-  var t = Math.min(1, (Date.now() - started) / 5200);
-  trainEl.style.transform = 'translateX(' + (-1500 + 3600 * t) + 'px)';
-  if (t < 1) return;
-  clearInterval(trainTimer);
-  trainTimer = null;
-  trainEl.classList.remove('running');
-  trainEl.style.opacity = '0';
-}, 16);
+wallpaper: 'auto',
+wallpaperSchedule: [ /* ... */ ],
+coastSchedule: [ /* ... */ ],
+wallpaperCrossfadeMs: 1600
 ```
 
-La posición vertical se calcula sobre la primera fila visible, para que siga
-funcionando si la rejilla está desplazada.
+El disparador del tren forma parte de `app.js`; no es una app separada y no
+necesita root.
 
-### CSS
+## 6. Personalización
 
-```css
-#train {
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: 4;
-  width: 1500px;
-  height: 150px;
-  opacity: 0;
-  transform: translateX(-1500px);
-  pointer-events: none;
-  will-change: transform, opacity;
-}
+Para usar tus propias fotos:
 
-#train.running { opacity: 1; }
+1. Sustituye los cuatro archivos de `app/wallpapers/`.
+2. Mantén los mismos nombres o actualiza `wallpaperSchedule`.
+3. Actualiza `CREDITS.md` si redistribuyes las nuevas imágenes.
+4. Recompila y reinstala.
+
+Para desactivar el fondo fotográfico:
+
+```js
+wallpaper: 'coast'
 ```
 
-El `filter: drop-shadow()` del SVG se usa solo durante el easter egg; no afecta
-al rendimiento normal del launcher.
+o:
 
----
+```js
+wallpaper: null
+```
 
-## 6. Créditos
+## 7. Notas
 
-- Fotos: Manarola, Cinque Terre, vía Unsplash; recortadas a 1920×1080.
-- `mediterranean-dawn.jpg` es una variante de color de la foto de día.
-- Términos y fuentes exactas: `app/wallpapers/CREDITS.md`.
-- “Cercanías Madrid” es una marca de Renfe; el tren es una ilustración
-  estilizada para uso personal.
+- Las imágenes son decorativas; la app sigue funcionando si faltan.
+- Mantén las fotos en 1920×1080 o un 16:9 similar.
+- No uses imágenes enormes: webOS 5 tiene memoria limitada.
+- El tren está oculto a propósito; no es una función principal de la UI.

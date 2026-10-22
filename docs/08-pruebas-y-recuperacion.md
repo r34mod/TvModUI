@@ -1,214 +1,144 @@
-# 08 — Pruebas, diagnóstico y recuperación
+# 08 — Pruebas y recuperación
 
-## 1. Matriz de pruebas
+## 1. Lista de pruebas
 
-| Prueba | Resultado esperado |
-|---|---|
-| Pulsar Home | Abre Inicio sin parpadeo del Home de LG |
-| `getForegroundAppInfo` | `com.gathin.tvhome` |
-| Navegar con flechas | El foco se mueve sin tirones |
-| OK en una app | Abre la app |
-| OK en TV en directo | Abre el panel Antena TV |
-| Flechas en Antena | Cambia de canal |
-| Tecla `4` | Sintoniza el canal 4 y abre TV |
-| Atrás en Antena | Cierra el panel |
-| Atrás ×5 | Aparece el tren |
-| Casa | Abre Home Assistant |
-| OK en una luz | Enciende/apaga y refresca |
-| Atrás en Casa | Cierra el panel |
-| Reiniciar TV | Inicio sigue siendo el Home |
+Haz estas pruebas después de cada instalación:
 
----
+- [ ] La TV arranca normal.
+- [ ] Home abre Inicio.
+- [ ] El reloj y la fecha son correctos.
+- [ ] La rejilla se mueve con las flechas.
+- [ ] El dock abre apps.
+- [ ] Antena TV lista los canales 1–8.
+- [ ] Las teclas 1–8 abren el canal correspondiente.
+- [ ] El panel Casa lee Home Assistant.
+- [ ] El tren aparece tras cinco pulsaciones de Atrás.
+- [ ] Atrás cierra cada panel.
+- [ ] El fondo cambia al cambiar de franja.
+- [ ] Reinicia y pulsa Home otra vez.
+- [ ] El Home de LG sigue funcionando como respaldo.
 
-## 2. Comandos de comprobación
-
-Definir el host:
-
-```powershell
-$env:TV_HOST = 'IP_DE_LA_TV'
-```
-
-### Foreground
+## 2. Comprobar la app en primer plano
 
 ```bash
 ssh root@TV_HOST \
   "luna-send -n 1 -f luna://com.webos.applicationManager/getForegroundAppInfo '{}'"
 ```
 
-### Home por defecto
+Esperado tras pulsar Home:
 
-```bash
-ssh root@TV_HOST \
-  "luna-send -n 1 -f luna://com.webos.settingsservice/getSystemSettings \
-   '{\"category\":\"general\",\"key\":\"defaultApps\"}'"
+```json
+{
+  "foregroundAppInfo": {
+    "appId": "com.gathin.tvhome"
+  }
+}
 ```
 
-### App instalada
+## 3. Comprobar la app instalada
 
 ```bash
 ssh root@TV_HOST \
   "ls -la /media/developer/apps/usr/palm/applications/com.gathin.tvhome"
 ```
 
-### Lista de canales
-
 ```bash
 ssh root@TV_HOST \
-  "luna-send -n 1 -w 15000 -f \
-   luna://com.webos.service.apiadapter/tv/getChannelList '{}' | head -c 400"
+  "luna-send -n 1 -f luna://com.webos.applicationManager/listLaunchPoints '{}'" \
+  | grep -o 'com.gathin.tvhome'
 ```
 
-### Servicio de root
+## 4. Si Inicio no abre
 
-```bash
-ssh root@TV_HOST \
-  "luna-send -n 1 -f luna://org.webosbrew.hbchannel.service/exec \
-   '{\"command\":\"id\"}'"
-```
-
-### Logs del watcher (si se usa el rescate)
-
-```bash
-ssh root@TV_HOST "tail -50 /tmp/vibehack-watcher.log"
-```
-
----
-
-## 3. Reinstalar la app
+1. Comprueba que el IPK existe en `dist/`.
+2. Reinstala:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File tools\build.ps1
 powershell -ExecutionPolicy Bypass -File tools\install.ps1 -TvHost $env:TV_HOST -Launch
 ```
 
-Si se cambió la lista de apps:
+3. Busca `state":"installed"` en el log de instalación.
+4. Revisa `app/appinfo.json`; el `id` debe ser `com.gathin.tvhome`.
+5. Comprueba el directorio de la app en la TV.
+6. Si el Home apunta a una app que no está instalada, vuelve primero al Home de
+   LG.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File tools\sync-apps.ps1 -TvHost $env:TV_HOST
-```
+## 5. Si Home vuelve al Home de LG
 
----
-
-## 4. Volver al Home de LG
+Vuelve a poner Inicio:
 
 ```bash
-ssh root@TV_HOST
+luna-send -n 1 -f luna://com.webos.settingsservice/setSystemSettings \
+  '{"category":"general","settings":{"defaultApps":{"home":"com.gathin.tvhome"}}}'
+```
+
+Si no se mantiene tras reiniciar, revisa:
+
+- que la app está instalada;
+- que `handlesRelaunch` es `false`;
+- que ningún watcher legacy está peleando con el ajuste;
+- que el firmware no ha reseteado `defaultApps`.
+
+## 6. Volver al Home de LG
+
+```bash
 luna-send -n 1 -f luna://com.webos.settingsservice/setSystemSettings \
   '{"category":"general","settings":{"defaultApps":{"home":"com.webos.app.fullhome"}}}'
 ```
 
-Inicio se puede seguir abriendo desde su icono.
-
----
-
-## 5. Desactivar el watcher de rescate
-
-Si en algún momento se activó el watcher antiguo y se quiere volver al Home
-directo:
+Después desactiva el watcher legacy si lo habías activado:
 
 ```bash
-ssh root@TV_HOST
-sh /ruta/a/disable-watcher.sh
+sh /media/developer/apps/usr/palm/applications/com.gathin.tvhome/tools/legacy-disable-watcher.sh
 ```
 
-El script:
+O ejecuta el script saneado del repo por SSH.
 
-- mata el proceso;
-- borra `/tmp/vibehack-watcher.pid`;
-- elimina el hook de `/var/lib/webosbrew/init.d/`;
-- intenta reactivar Launch Home o deja el Home de LG.
+## 7. Si la app falla
 
-No debe quedar ejecutándose a la vez que el Home directo.
+- Reinstala el IPK.
+- Comprueba que existe `app/apps.js`; ejecuta `tools/setup.ps1` o
+  `sync-apps.ps1`.
+- Comprueba que existe `app/config.js` y que es JavaScript válido.
+- Abre el Web Inspector si está disponible o revisa los logs.
+- Quita los cambios recientes de CSS/JS y recompila.
 
----
+Un `apps.js` o `config.js` que falta es una causa habitual de pantalla en
+negro.
 
-## 6. Pantalla negra o launcher que no responde
+## 8. Problemas de arranque y failsafe
 
-### Opción A: volver al Home de LG
+Si la TV entra en bootloop tras el root:
 
-```bash
-ssh root@TV_HOST
-luna-send -n 1 -f luna://com.webos.settingsservice/setSystemSettings \
-  '{"category":"general","settings":{"defaultApps":{"home":"com.webos.app.fullhome"}}}'
-```
-
-### Opción B: abrir Inicio desde su icono
-
-Aunque no sea el Home por defecto, la app sigue instalada. Se puede lanzar con:
-
-```bash
-ssh root@TV_HOST \
-  "luna-send -n 1 -f luna://com.webos.applicationManager/launch \
-   '{\"id\":\"com.gathin.tvhome\"}'"
-```
-
-### Opción C: desactivar el watcher
-
-Si el problema empezó al activar el watcher, ejecutar `disable-watcher.sh`.
-
-### Opción D: reiniciar
-
-```bash
-ssh root@TV_HOST "reboot"
-```
-
-No cortar la alimentación durante el arranque. Esperar al menos 60 segundos.
-
----
-
-## 7. Failsafe
-
-Flag:
+- No cortes la alimentación repetidamente.
+- Espera al menos 60 segundos.
+- Revisa el flag de failsafe de Homebrew:
 
 ```text
 /var/luna/preferences/webosbrew_failsafe
 ```
 
-Si aparece, Homebrew puede estar en modo de protección. No hacer factory reset
-ni actualizar firmware. Revisar el estado de Homebrew y seguir el procedimiento
-de recuperación correspondiente.
+- Usa el procedimiento de recuperación de Homebrew.
+- No hagas factory reset en una TV rooteada salvo que aceptes perder el root y
+  los datos.
 
----
+La recuperación exacta depende del modelo y de la versión de Homebrew. Este repo
+no incluye un método universal de desbrick.
 
-## 8. Diagnóstico de Antena TV
+## 9. Rollback
 
-1. Abrir el panel.
-2. Mirar el estado: `8 canales`, `Buscando canales…`, `Sin lista`.
-3. Si hay caché, borrarla:
+1. Pon el Home de LG por defecto.
+2. Desactiva el watcher.
+3. Desinstala Inicio si ya no lo quieres.
+4. Guarda una copia del IPK y de `config.js` que funcionaban fuera del repo.
 
-```js
-localStorage.removeItem('tvhome.antenna.v1');
-```
+## 10. Qué incluir en un bug report
 
-4. Recargar Inicio.
-5. Probar la API de canales por SSH.
-6. Si la API falla, los nombres base y las teclas 1–8 deben seguir funcionando.
+- Modelo de TV.
+- Versión de webOS y firmware.
+- Versión del launcher.
+- Pasos para reproducir.
+- Si el Home directo está activo.
+- Logs saneados: sin IPs, tokens, URLs ni números de serie.
 
----
-
-## 9. Diagnóstico de Home Assistant
-
-| Comprobación | Comando / acción |
-|---|---|
-| La TV llega a HA | `curl` desde la TV |
-| Token válido | `GET /api/` con Bearer |
-| Entidad correcta | Revisar `entity_id` en HA |
-| Servicio root | Probar `hbchannel.service/exec` |
-| Panel | Abrir Casa y mirar el estado |
-
-Si el token se ha pegado mal, suele devolver `401`. Si la URL no es accesible,
-`curl` devuelve error o timeout. Si el servicio root falla, el panel muestra
-“No se pudo ejecutar en la TV”.
-
----
-
-## 10. Checklist antes de reiniciar
-
-- [ ] El IPK se ha generado sin errores.
-- [ ] La instalación terminó en `installed`.
-- [ ] `defaultApps.home` apunta a `com.gathin.tvhome`.
-- [ ] La app aparece en `listLaunchPoints`.
-- [ ] El panel Antena se abre y cierra.
-- [ ] El Home de LG sigue disponible como fallback.
-- [ ] No hay ningún watcher antiguo ejecutándose.
-- [ ] No se ha cortado la corriente durante el arranque.
+Más notas de seguridad: [`../SECURITY.md`](../SECURITY.md).

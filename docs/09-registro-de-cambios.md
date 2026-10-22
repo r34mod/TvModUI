@@ -1,90 +1,86 @@
 # 09 — Registro de cambios
 
-Cronología resumida del trabajo. No incluye IPs, tokens ni URLs privadas.
+Esta es la cronología del trabajo, no un historial de versiones semánticas.
 
-## Fase 1 — Base y acceso
+## Octubre de 2026 — base inicial
 
-- Se rooteó la TV con **SlopBro** desde un PC en la misma LAN, con asistencia
-  remota por internet. La TV no se expuso a Internet.
-- Se instaló Homebrew Channel y se elevó su servicio.
-- Se desactivó `Inicio rápido+`.
-- Se comprobó el failsafe de Homebrew y el estado de los servicios Luna.
-- Se documentó el modelo, webOS y firmware, sin cambiar el firmware.
-- Se decidió no usar Developer Mode ni `ares install`.
+- Se partió del port a webOS de **tv-vibehack**.
+- Se mantuvieron rejilla, dock y navegación con mando.
+- Se añadieron textos en español y el lienzo 1920×1080.
+- Se puso `handlesRelaunch: false` para el comportamiento de Home.
 
-## Fase 2 — Launcher propio
+## Home directo
 
-- Se partió del port `webos-vibehack`.
-- Se adaptó la app a 1920×1080 y a las limitaciones de webOS 5.
-- Se empaquetó como `com.gathin.tvhome` y se instaló por `dev/install`.
-- Se configuró `defaultApps.home` para que el botón Home abra Inicio.
-- Se añadió `handlesRelaunch: false`.
-- Se dejó el Home de LG como fallback.
-- Se descartó el watcher permanente porque el Home directo ya funcionaba.
+- Los primeros intentos usaban Developer Mode y un watcher externo.
+- El watcher detectaba el Home de LG y lanzaba Inicio encima; provocaba un flash
+  visible y necesitaba un proceso permanente.
+- Se sustituyó por `defaultApps.home = com.gathin.tvhome`.
+- El Home de LG queda como respaldo.
+- Los scripts del watcher se conservan solo como rescate.
 
-## Fase 3 — Limpieza de apps
+## Antena TV
 
-- Se eliminaron Twitch y apps promocionales de LG.
-- Se regeneró `apps.js` y la carpeta de iconos con `sync-apps.ps1`.
-- Se ocultaron apps internas, HDMI y la propia app Inicio.
-- Se mantuvo la app de alertas deportivas oculta porque es de sistema.
+- Se añadió un panel con los canales 1–8 en una fila.
+- Se usó la lista real del sintonizador vía `apiadapter`.
+- Se añadieron insignias numéricas y logos locales opcionales.
+- Se cacheó la lista en `localStorage`.
+- Se añadió acceso con mando, ratón y teclas 1–8.
+- Se corrigió la apertura cuando la app de TV ya estaba abierta.
 
-## Fase 4 — Fondo
+## Fondo y tren
 
-- Se eligieron fotos reales de Manarola.
-- Se recortaron a 1920×1080.
-- Se añadieron cuatro franjas: dawn, day, sunset y night.
-- Se implementó el crossfade de 1600 ms.
-- Se añadió sombra y text-shadow para legibilidad.
-- Se conservó la escena SVG “coast” como respaldo.
+- Se añadieron cuatro fotos de Manarola con horario.
+- Se añadió crossfade entre franjas.
+- Se añadieron escenas SVG de costa como respaldo.
+- Se añadió el easter egg del tren de Cercanías tras cinco Atrás.
 
-## Fase 5 — Easter egg
+## Home Assistant
 
-- Se dibujó un tren de Cercanías Madrid de 3 coches en SVG.
-- Se implementó la secuencia de 5 Atrás en 3000 ms.
-- Se animó con un temporizador JS de 16 ms.
-- Se colocó sobre la primera fila visible de apps.
-- Se verificó con inyección de teclas y captura de pantalla.
+- Se añadió la píldora y el panel **Casa**.
+- Se usó el servicio `exec` de Homebrew Channel para ejecutar `curl` en la TV.
+- Se añadieron filas de luz, switch y sensor binario.
+- Se añadieron llamadas `turn_on` / `turn_off`.
+- El token queda en `app/config.js`, fuera del repo público.
+- No se creó ninguna entidad `media_player` escribible.
 
-## Fase 6 — Antena TV
+## Rendimiento en webOS 5
 
-- Se creó el panel flotante con 8 canales.
-- Se añadieron logos locales y números.
-- Se implementó la lectura de canales con `apiadapter/tv/getChannelList`.
-- Se filtró la lista en la TV con Node para no enviar 200 KB por el puente.
-- Se añadió caché de 5 minutos y precarga a los 1,5 s.
-- Se implementó `openChannel` + lanzamiento de TV en directo a los 350 ms.
-- Se añadieron flechas, ratón, OK y teclas 1–8.
-- Se verificó el canal 4 y el retorno a Inicio.
+- Se eliminó el blur en vivo y `backdrop-filter`.
+- Se hicieron opacos los paneles.
+- Se sustituyeron sombras difuminadas de foco por anillos internos.
+- Se prerenderizó el panel de Antena TV.
+- Se redujo el trabajo del DOM y los timers vivos.
+- Se mantuvieron animaciones en `transform` y `opacity`.
+- Se verificó que Home trae Inicio al frente sin recarga completa.
 
-## Fase 7 — Home Assistant
+## Root
 
-- Se añadió el panel Casa.
-- Se configuró la URL, el token de larga duración y las entidades.
-- Se implementó la lectura REST con `curl` como root.
-- Se añadió el refresco cada 5 s mientras el panel está abierto.
-- Se implementaron toggles para luces, switches, escenas, scripts, etc.
-- Se añadieron estados `Conectando…`, `Conectado` y `Sin conexión`.
+- Se rooteó con **SlopBro** desde un PC en la misma LAN.
+- Se instaló **Homebrew Channel 0.7.3**.
+- Se habilitó SSH root.
+- Se mantuvo Telnet desactivado.
+- No se actualizó firmware, no se hizo factory reset y no se reinstaló Developer
+  Mode.
+- El proceso real está en [`10-root-slopbro.md`](10-root-slopbro.md).
 
-## Fase 8 — Rendimiento
+## Build final de esa fase
 
-- Se detectó que el blur a pantalla completa era muy caro en webOS 5.
-- Se eliminó `filter: blur()` del fondo y `backdrop-filter`.
-- Se cambió el panel a fondo opaco.
-- Se quitaron sombras grandes, transforms y transiciones de las tarjetas.
-- Se quitaron los `drop-shadow()` de los logos.
-- Se precreó el panel oculto y se reutiliza.
-- Se dejó un foco plano con anillo interior.
-- Se redujo la apertura a un fade de 100 ms.
-- Se midió de nuevo: de picos de cientos de ms a una respuesta estable de
-  decenas de ms en la mayoría de pulsaciones.
+- IPK: **6.409.406 bytes**.
+- Última app en primer plano tras pulsar Home: `com.gathin.tvhome`.
+- Stremio no se instaló por IPK; se dejó para la LG Content Store.
 
-## Estado actual
+## Pendiente / opcional
 
-- Inicio es el Home directo.
-- Home de LG sigue disponible.
-- Panel Antena TV rediseñado y optimizado.
-- Fondo real de Manarola activo.
-- Tren de Cercanías funcionando.
-- Panel Casa conectado a Home Assistant.
-- Sin secretos en esta documentación.
+- Confirmación de instalación de Stremio en la TV.
+- Eliminación opcional de apps que no se usan.
+- Comprobación final de “Conectado” en Home Assistant.
+- Restauración opcional de logos de Antena.
+- Prueba del scaffold Samsung Tizen en hardware.
+
+## Documentación
+
+- Docs en español: [`../docs/`](../docs/).
+- Docs en inglés: [`../docs-en/README.md`](../docs-en/README.md).
+- Código saneado en `app/` y `tools/`.
+- Repo público preparado con `.gitignore`, licencia, aviso de seguridad y
+  escáner de secretos.

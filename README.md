@@ -11,6 +11,8 @@ dock, panel de canales, fondo horario, easter egg y panel de Home Assistant.
 > El repositorio está saneado: no contiene IPs privadas, tokens ni claves.
 > Cada usuario debe crear su `app/config.js` local.
 
+**Idioma:** Español · [English](README.en.md) · [English docs](docs-en/README.md)
+
 ---
 
 ## Estado por plataforma

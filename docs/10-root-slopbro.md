@@ -1,255 +1,152 @@
-# 10 — Root de la TV con SlopBro
+# 10 — Root con SlopBro
 
-## 1. Aclaración: remoto no significa TV expuesta
+Este es el procedimiento que se usó realmente en la TV de referencia. **No** es
+un instalador universal. Lee toda la página y la documentación oficial de
+SlopBro/Homebrew antes de ejecutar nada.
 
-La primera sesión de trabajo fue **remota por internet**, pero el root se ejecutó
-desde un PC que estaba **en la misma red local que la TV**.
+## 1. Contexto
 
-SlopBro levanta un servidor HTTP local en el PC y la TV carga desde ahí el
-exploit. Por eso:
+- TV: LG **55UN71006LB**.
+- webOS 5, firmware **04.64.00**.
+- Un PC en la **misma red local** que la TV.
+- La sesión de trabajo fue remota por internet, pero la TV **no** estaba expuesta
+  a internet: sin port forwarding, sin IP pública, sin DMZ.
+- Herramienta: **SlopBro**, ejecutada desde el PC por la LAN.
+- Resultado: Homebrew Channel **0.7.3** y SSH root.
 
-- no hizo falta abrir puertos en el router;
-- no se expuso la TV directamente a Internet;
-- no se usó una VPN para llegar a la TV;
-- el tráfico del exploit fue **PC ↔ TV dentro de la LAN**.
+SlopBro es un proyecto separado con su propia licencia (AGPL). **No** se incluye
+en este repositorio. Usa la fuente oficial y comprueba su compatibilidad actual.
 
-Si algún día hay que repetirlo con la TV y el PC en sitios distintos, haría
-falta una VPN o un túnel hacia esa LAN. No es el escenario que se usó aquí.
+## 2. Antes de empezar
 
----
+1. Confirma el modelo y firmware exactos.
+2. Confirma que la versión actual de SlopBro soporta webOS 5 y tu TV.
+3. Pon el PC y la TV en la misma LAN.
+4. Desactiva VPNs que puedan cambiar la ruta hacia la TV.
+5. Mantén la TV conectada a la corriente; no la desenchufes durante el proceso.
+6. Ten a mano el Home de LG y una vía de recuperación.
+7. No actualices firmware durante el proceso.
 
-## 2. Contexto
+No expongas la TV a internet. No ejecutes la herramienta desde una red pública.
 
-- TV: **LG 55UN71006LB**, webOS 5.
-- Firmware: **04.64.00 (5.6.2-21)**.
-- Placa: `k6lp`.
-- Conexión: **Ethernet**, PC y TV en el mismo router.
-- Método: **SlopBro**, exploit de la vulnerabilidad de `jsserver`.
-- Motivo de elegir SlopBro: el método de `faultmanager` está parcheado desde
-  el firmware 04.60.49.
+## 3. Comando usado
 
-No se actualizó el firmware, no se hizo factory reset y no se instaló la app
-Developer Mode de LG.
+Con la IP/nombre de la TV en `TV_HOST`:
 
----
-
-## 3. Antes de empezar
-
-Checklist previo:
-
-- [ ] Firmware anotado: `04.64.00`.
-- [ ] Modelo y firmware comprobados en la tabla de compatibilidad de
-      Homebrew/rootmy.tv.
-- [ ] PC con **Python 3.10 o superior**.
-- [ ] TV y PC **por cable al mismo router**, sin red de invitados, sin VLAN y
-      sin aislamiento de clientes.
-- [ ] Perfil de red de Windows en **Privada**.
-- [ ] Sin VPN activa en el PC.
-- [ ] App **Developer Mode** de LG desinstalada.
-- [ ] **Inicio rápido+** desactivado temporalmente.
-- [ ] IP de la TV localizada en los ajustes de red.
-- [ ] `ping` desde el PC a la TV correcto.
-
-> Con cable se evitan caídas de Wi-Fi y aislamientos de punto de acceso. Es la
-> opción más estable para este proceso.
-
----
-
-## 4. Preparar SlopBro
-
-En el PC, dentro de la carpeta de trabajo:
-
-```powershell
-git clone <repositorio-oficial-de-slopbro> slopbro
-cd slopbro
-py -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
-
-Si PowerShell bloquea la activación:
-
-```powershell
-Set-ExecutionPolicy -Scope Process Bypass -Force
-```
-
-SlopBro solo usa la biblioteca estándar de Python; no necesita dependencias
-externas.
-
----
-
-## 5. Ejecutar el exploit
-
-El comando que funcionó fue:
-
-```powershell
+```bash
 python slopbro.py --webos-version 5 TV_HOST --debug
 ```
 
-> El primer intento tuvo una errata en el nombre del parámetro
-> (`--webose-version`). El script no arrancó; se corrigió a
-> `--webos-version` y funcionó.
+El flag `--webos-version 5` selecciona el perfil de webOS 5. `--debug` imprime
+los pasos y es útil si falla el emparejamiento o la instalación.
 
-Qué ocurre:
-
-1. SlopBro arranca un servidor HTTP local en el PC.
-2. Abre una conexión SSAP con la TV.
-3. Lanza una app WAM que carga la página del exploit.
-4. La TV muestra una página de estado y pide **emparejamiento**.
-5. Se acepta el aviso en la TV.
-6. Se descarga el paquete falso de `com.webos.service.jsserver`.
-7. Ese paquete se ejecuta como **root** y lanza `autoroot.sh`.
-8. `autoroot.sh` instala **Homebrew Channel** y lo eleva.
-9. Al terminar aparece el mensaje **“Rooting complete”**.
-10. Puede hacer falta reiniciar para que Homebrew Channel aparezca.
-
-No se flashea nada, no se toca el bootloader y no se cambia el firmware.
-
----
-
-## 6. Si falla
-
-| Síntoma | Prueba |
-|---|---|
-| La TV no conecta de vuelta al PC | `--local-ip IP_DEL_PC` |
-| Error TLS/curl en la TV | `--curl-insecure` (útil si el reloj de la TV está mal) |
-| No elige la app correcta | `--debug --webos-version 5` |
-| No aparece Homebrew Channel | Reiniciar con Inicio rápido+ desactivado |
-| Nada funciona | Revisar Firewall de Windows y la red Privada |
-| Se queda en el emparejamiento | Aceptar el aviso en la TV y repetir |
-
-Si se usa `--local-ip`, hay que pasar la IP **del PC**, no la de la TV.
-
----
-
-## 7. Primera configuración de Homebrew
-
-En **Homebrew Channel → Settings**:
-
-- [ ] **SSH Server: ON**.
-- [ ] **Telnet: OFF** (root sin contraseña en la LAN).
-- [ ] **Block system updates: ON**.
-- [ ] Failsafe mode: dejar como está.
-
-Después, por SSH:
+Según la versión de SlopBro, el comando puede ser:
 
 ```bash
-ssh root@TV_HOST
+python slopbro.py --webos-version 5 TV_HOST
 ```
 
-La contraseña inicial del root de Homebrew es `alpine`. Se debe cambiar o,
-mejor, usar solo autenticación por clave.
+Los argumentos exactos deben coincidir con la versión que descargues.
+
+## 4. Emparejamiento
+
+SlopBro puede pedir emparejamiento SSAP. En la TV:
+
+1. Aparece un aviso de emparejamiento/autorización.
+2. Acéptalo con el mando.
+3. Espera a que la herramienta continúe.
+4. Si no aparece el aviso, comprueba que la TV está despierta y en la misma red.
+
+No compartas el archivo `.key` que crea el emparejamiento. Su nombre puede
+contener la IP de la TV y es una credencial.
+
+## 5. Homebrew Channel
+
+Cuando el paso de root tiene éxito, SlopBro instala **Homebrew Channel**.
+
+Resultado de referencia:
+
+- Homebrew Channel **0.7.3**.
+- SSH root disponible.
+- Contraseña root inicial: **`alpine`**.
+- Telnet debe quedar **desactivado**.
+
+Cambia la contraseña root tras el primer login si tu instalación de Homebrew lo
+permite. No actives Telnet.
+
+## 6. Verificar acceso
 
 ```bash
-id
-# debe devolver uid=0(root)
+ssh root@TV_HOST 'id; uname -a'
 ```
 
-### Cambiar la contraseña
+Esperado:
+
+```text
+uid=0(root)
+```
+
+Comprueba Homebrew:
 
 ```bash
-passwd
+ssh root@TV_HOST \
+  "luna-send -n 1 -f luna://org.webosbrew.hbchannel.service/exec \
+   '{\"command\":\"id\"}'"
 ```
 
-### Añadir una clave pública
-
-En el PC:
-
-```powershell
-ssh-keygen -t ed25519
-Get-Content $env:USERPROFILE\.ssh\id_ed25519.pub
-```
-
-En la TV:
+Comprueba el flag de failsafe:
 
 ```bash
-mkdir -p /home/root/.ssh
-chmod 700 /home/root/.ssh
-echo 'TU_CLAVE_PUBLICA' >> /home/root/.ssh/authorized_keys
-chmod 600 /home/root/.ssh/authorized_keys
+ssh root@TV_HOST 'ls -l /var/luna/preferences/webosbrew_failsafe'
 ```
 
-Luego se puede entrar sin contraseña:
+Si existe, Homebrew está en modo protección. Espera al menos 60 segundos tras el
+arranque antes de hacer cualquier otra cosa.
 
-```bash
-ssh root@TV_HOST
-```
+## 7. Después del root
 
-> No copies la clave privada del PC a la TV ni la publiques. El archivo `.key`
-> que crea SlopBro para el emparejamiento SSAP tampoco debe compartirse.
+- Mantén Homebrew Channel instalado.
+- Instala/mantén el launcher con `dev/install`.
+- Configura `defaultApps.home` solo cuando la app funcione.
+- Mantén el Home de LG como respaldo.
+- No hagas factory reset.
+- No actualices firmware sin comprobar compatibilidad.
+- No actives Telnet.
+- No expongas SSH a internet.
 
----
+Continúa en
+[`02-instalacion-y-home-directo.md`](02-instalacion-y-home-directo.md).
 
-## 8. Comprobar que el root sobrevive
+## 8. Riesgos
 
-```bash
-ssh root@TV_HOST 'id'
-```
+- El root puede anular la garantía.
+- Un root fallido puede dejar la TV inservible.
+- Una actualización de firmware puede quitar el root o romper Homebrew.
+- Un factory reset puede quitar el root y tus datos.
+- Las claves de emparejamiento y el acceso SSH son credenciales.
+- El método depende del modelo, firmware y versión de las herramientas.
 
-Reiniciar y repetir:
+Si el root ya funciona, **no lo repitas** solo para instalar este launcher.
 
-```bash
-ssh root@TV_HOST 'id'
-```
+## 9. Qué no publicar
 
-Si sigue devolviendo `uid=0(root)`, la persistencia funciona.
+No publiques nunca:
 
-También se puede comprobar Homebrew Channel en la TV y el estado del failsafe:
+- el archivo `.key` de emparejamiento;
+- la IP o el hostname de la TV;
+- claves o contraseñas SSH;
+- `autoroot.log`;
+- logs de SlopBro con datos de red;
+- una build modificada de SlopBro.
 
-```bash
-ls -l /var/luna/preferences/webosbrew_failsafe
-```
+## 10. Si algo falla
 
-Si el flag existe, Homebrew puede estar en modo de protección. No hacer factory
-reset ni actualizar firmware: revisar primero el estado de Homebrew.
+- Reejecuta con `--debug` y lee el primer error, no el último.
+- Confirma que la TV está en la misma LAN.
+- Confirma el flag de versión de webOS.
+- Reinicia la TV y espera a que pase la ventana de failsafe.
+- Revisa las notas oficiales de compatibilidad de SlopBro/Homebrew.
+- No pruebes métodos de root aleatorios de otros modelos.
 
----
-
-## 9. Qué instala SlopBro
-
-- **Homebrew Channel** (versión usada: `0.7.3`).
-- Elevación del servicio de Homebrew para que pueda ejecutar tareas como root.
-- Persistencia del root.
-- Aviso final para reiniciar.
-
-SlopBro **no**:
-
-- actualiza el firmware;
-- hace factory reset;
-- instala Developer Mode;
-- cambia la partición de sistema;
-- instala el launcher Inicio (eso se hizo después, por separado).
-
----
-
-## 10. Seguridad
-
-- **Telnet OFF**.
-- Cambiar la contraseña `alpine` o usar solo clave SSH.
-- No abrir el puerto 22 de la TV a Internet.
-- No hacer port forwarding de la TV.
-- No instalar la app Developer Mode de LG mientras esté rooteada.
-- Bloquear actualizaciones de sistema desde Homebrew.
-- No hacer factory reset: se pierde el root y en este firmware puede no
-  recuperarse.
-- No cortar la corriente durante los primeros 30–60 segundos de arranque.
-- Guardar el checklist y una copia de la configuración de Homebrew.
-
----
-
-## 11. Qué se hizo después del root
-
-Con el root ya funcionando:
-
-1. Se instaló y configuró **Homebrew Channel**.
-2. Se habilitó SSH y se preparó el acceso por clave.
-3. Se instaló el launcher **Inicio** (`com.gathin.tvhome`) por `dev/install`.
-4. Se configuró como Home por defecto.
-5. Se añadieron Antena TV, fondo, tren y panel de Home Assistant.
-
-El detalle de esa parte está en:
-
-- [`02-instalacion-y-home-directo.md`](02-instalacion-y-home-directo.md)
-- [`03-ui-inicio.md`](03-ui-inicio.md)
-- [`04-antena-tv.md`](04-antena-tv.md)
-- [`05-fondo-y-tren.md`](05-fondo-y-tren.md)
-- [`06-home-assistant.md`](06-home-assistant.md)
+Este repositorio documenta una ruta que funcionó, no un procedimiento
+garantizado.
