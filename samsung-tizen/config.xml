@@ -6,9 +6,9 @@
         viewmodes="maximized">
 
   <tizen:application id="tvmodui.tvhome" package="tvmodui" required_version="5.5"/>
-  <content src="index.html"/>
+  <content src="app/index.html"/>
   <feature name="http://tizen.org/feature/screen.size.all"/>
-  <icon src="icon.png"/>
+  <icon src="app/icon.png"/>
   <name>TvModUI</name>
 
   <tizen:profile name="tv"/>

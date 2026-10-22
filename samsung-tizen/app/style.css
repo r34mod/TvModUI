@@ -85,13 +85,20 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  aspect-ratio: 16 / 9;
+  height: 169px;
   padding: 18px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, .12);
   border-radius: 22px;
   background: linear-gradient(160deg, #252c36, #161b22);
   outline: none;
+}
+
+@supports (aspect-ratio: 16 / 9) {
+  .card {
+    height: auto;
+    aspect-ratio: 16 / 9;
+  }
 }
 
 .card::after {

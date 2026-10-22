@@ -26,8 +26,8 @@ function Warn([string]$message) {
 
 $files = Get-ChildItem -Path $root -Recurse -File -Force |
   Where-Object {
-    $rel = $_.FullName.Substring($root.Length).TrimStart('\')
-    $parts = $rel -split '\\'
+    $rel = $_.FullName.Substring($root.Length) -replace '^[\\/]+', ''
+    $parts = $rel -split '[\\/]'
     $skip = $false
     foreach ($d in $skipDirs) { if ($parts -contains $d) { $skip = $true } }
     (-not $skip) -and ($skipExt -notcontains $_.Extension.ToLowerInvariant())
@@ -43,7 +43,7 @@ $keyRe = '-----BEGIN [A-Z ]*PRIVATE KEY-----'
 $tokenRe = 'token\s*[:=]\s*[''"]([^''"]{16,})[''"]'
 
 foreach ($file in $files) {
-  $rel = $file.FullName.Substring($root.Length).TrimStart('\')
+  $rel = $file.FullName.Substring($root.Length) -replace '^[\\/]+', ''
   $text = Get-Content -LiteralPath $file.FullName -Raw -ErrorAction SilentlyContinue
   if (-not $text) { continue }
 
@@ -65,7 +65,7 @@ foreach ($file in $files) {
 }
 
 # Archivos que nunca deben estar en el repo.
-$forbidden = @('app\config.js', 'app\apps.js', 'samsung-tizen\app\config.js')
+$forbidden = @('app/config.js', 'app/apps.js', 'samsung-tizen/app/config.js')
 foreach ($f in $forbidden) {
   if (Test-Path (Join-Path $root $f)) {
     Warn "existe $f (local, ignorado por .gitignore; no lo añadas al commit)"
@@ -74,7 +74,7 @@ foreach ($f in $forbidden) {
 
 Get-ChildItem -Path $root -Recurse -File -Force -Filter *.key |
   ForEach-Object {
-    $rel = $_.FullName.Substring($root.Length).TrimStart('\')
+    $rel = $_.FullName.Substring($root.Length) -replace '^[\\/]+', ''
     Fail $rel 0 "archivo .key"
   }
 
